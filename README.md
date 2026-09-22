@@ -35,9 +35,22 @@ CLMS/
     Main.java
 ```
 
-## Phase 2 direction
+## Phase 2 backend setup
 
-The static JavaScript data will be replaced with Java model, service, DAO, and JDBC layers. The SQL table names and field names are intentionally aligned with that future implementation.
+The Java backend now includes model classes, JDBC DAOs, authentication lookup, equipment listing, borrow requests, approvals, returns, and overdue fine calculation. Java 17 is required.
+
+Download MySQL Connector/J and place the jar in a local `lib/` directory. Then compile and run from the project root:
+
+```bash
+mkdir -p lib out
+javac -cp 'lib/mysql-connector-j-*.jar' -d out $(find src -name '*.java')
+export CLMS_DB_URL='jdbc:mysql://localhost:3306/clms?serverTimezone=UTC'
+export CLMS_DB_USER='clms_app'
+export CLMS_DB_PASSWORD='your_password'
+java -cp 'out:lib/mysql-connector-j-*.jar' Main
+```
+
+The backend defaults to `clms_app` and an empty password if environment variables are not provided. Do not commit database passwords or connector jars to Git. The current `Main` command lists available equipment and serves as the first JDBC smoke test.
 
 
 
@@ -118,4 +131,4 @@ FLUSH PRIVILEGES;
 
 The database scripts are `schema.sql` and `sample-data.sql`.
 
-The current frontend uses demo data from `script.js`; it is not connected to MySQL yet. The Java file `Main.java` is still a starter placeholder. Database integration will be part of Phase 2 using Java and JDBC.
+The current frontend still uses demo data from `script.js`. The Phase 2 Java layer now provides the first JDBC integration point; replacing frontend demo calls with a web/API layer is the next backend step.

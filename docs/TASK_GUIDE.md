@@ -19,11 +19,11 @@ Build a role-based College Laboratory Equipment Management System. Students can 
 ### Phase 2: Java backend and database integration
 **Due: October 5, 2026**
 
-- [ ] Create Java model classes
-- [ ] Add validation and domain exceptions
-- [ ] Implement service classes
-- [ ] Implement DAO classes with JDBC
-- [ ] Connect authentication to the users table
+- [x] Create Java model classes
+- [x] Add validation and domain exceptions
+- [x] Implement service classes
+- [x] Implement DAO classes with JDBC
+- [x] Connect user lookup to the users table
 - [ ] Replace frontend demo data with backend responses
 - [ ] Test issue, return, overdue, and maintenance workflows
 

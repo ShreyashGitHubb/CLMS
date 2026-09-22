@@ -1,13 +1,20 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-void main() {
-    //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-    // to see how IntelliJ IDEA suggests fixing it.
-    IO.println(String.format("Hello and welcome!"));
+import dao.EquipmentDao;
+import model.Equipment;
+import service.EquipmentService;
 
-    for (int i = 1; i <= 5; i++) {
-        //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-        // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-        IO.println("i = " + i);
+public class Main {
+    public static void main(String[] args) {
+        try {
+            EquipmentService equipmentService = new EquipmentService(new EquipmentDao());
+            System.out.println("Available equipment:");
+            for (Equipment equipment : equipmentService.listAvailable()) {
+                System.out.printf("- %s (%d/%d available)%n",
+                        equipment.name(), equipment.availableQuantity(), equipment.totalQuantity());
+            }
+        } catch (Exception exception) {
+            System.err.println("CLMS could not connect to the database: " + exception.getMessage());
+            System.err.println("Check the JDBC driver and CLMS_DB_* environment variables.");
+            System.exit(1);
+        }
     }
 }
