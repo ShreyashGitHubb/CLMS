@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="College Laboratory Equipment Management System">
+  <title>CLMS | Laboratory equipment management</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">CL</div>
+        <div><strong>CLMS</strong><span>Lab operations</span></div>
+      </div>
+      <nav class="nav-list" aria-label="Primary navigation">
+        <button class="nav-item active" type="button" data-view="overview"><span>01</span>Overview</button>
+        <button class="nav-item" type="button" data-view="equipment"><span>02</span>Equipment</button>
+        <button class="nav-item" type="button" data-view="requests"><span>03</span>Requests <b id="requestBadge">1</b></button>
+        <button class="nav-item" type="button" data-view="maintenance"><span>04</span>Maintenance</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span>System operational</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Tuesday, September 22, 2026</p>
+          <h1 id="pageTitle">Good morning, Aarav</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="role-select">Viewing as
+            <select id="roleSelect" aria-label="Select dashboard role">
+              <option value="student">Student</option>
+              <option value="staff">Lab assistant</option>
+            </select>
+          </label>
+          <button class="avatar" type="button" aria-label="Open profile">AK</button>
+        </div>
+      </header>
+
+      <section class="view active" id="overviewView" aria-labelledby="pageTitle">
+        <div class="hero-row">
+          <div>
+            <p class="section-kicker">Lab pulse</p>
+            <h2>Keep practical work moving.</h2>
+            <p class="muted">Find what you need, request it in a few seconds, and keep every return accountable.</p>
+          </div>
+          <button class="primary-button" type="button" data-view-target="equipment">Browse equipment <span>-></span></button>
+        </div>
+        <div class="stat-grid">
+          <article class="stat-card accent-lime"><span>Available now</span><strong id="availableStat">27</strong><small>Across 5 categories</small></article>
+          <article class="stat-card"><span>My active requests</span><strong id="activeStat">1</strong><small>1 awaiting approval</small></article>
+          <article class="stat-card accent-orange"><span>Due this week</span><strong>02</strong><small>Return by Sep 28</small></article>
+        </div>
+        <div class="content-grid">
+          <section class="panel wide-panel">
+            <div class="panel-heading"><div><p class="section-kicker">Recommended</p><h3>Available equipment</h3></div><button class="text-button" type="button" data-view-target="equipment">View all</button></div>
+            <div class="equipment-list" id="recommendedList"></div>
+          </section>
+          <section class="panel activity-panel">
+            <div class="panel-heading"><div><p class="section-kicker">Your log</p><h3>Recent activity</h3></div></div>
+            <div class="timeline"><div class="timeline-item"><span class="timeline-marker green"></span><div><strong>Request submitted</strong><small>Arduino Uno Kit · Today, 09:42</small></div><em>Pending</em></div><div class="timeline-item"><span class="timeline-marker orange"></span><div><strong>Return due</strong><small>Digital Multimeter · Sep 21</small></div><em class="warning">Overdue</em></div><div class="timeline-item"><span class="timeline-marker blue"></span><div><strong>Request approved</strong><small>Raspberry Pi 4 Kit · Sep 15</small></div><em class="success">Complete</em></div></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="equipmentView" aria-labelledby="equipmentHeading">
+        <div class="section-header"><div><p class="section-kicker">Inventory catalog</p><h2 id="equipmentHeading">Find your next tool.</h2></div><div class="filters"><label class="search-box"><span>Search</span><input id="searchInput" type="search" placeholder="Search equipment"></label><select id="categoryFilter" aria-label="Filter equipment category"><option value="all">All categories</option><option value="Measurement">Measurement</option><option value="Microcontroller">Microcontroller</option><option value="Workshop">Workshop</option><option value="Computer">Computer</option></select></div></div>
+        <div class="catalog-grid" id="catalogGrid"></div>
+      </section>
+
+      <section class="view" id="requestsView" aria-labelledby="requestsHeading">
+        <div class="section-header"><div><p class="section-kicker">Borrowing workflow</p><h2 id="requestsHeading">Requests and returns.</h2></div><span class="table-count">2 records</span></div>
+        <section class="panel table-panel"><div class="table-wrap"><table><thead><tr><th>Equipment</th><th>Requested on</th><th>Due date</th><th>Status</th><th>Fine</th></tr></thead><tbody><tr><td><strong>Arduino Uno Kit</strong><small>Microcontroller</small></td><td>Sep 22, 2026</td><td>Sep 28, 2026</td><td><span class="pill pending">Pending</span></td><td>-</td></tr><tr><td><strong>Digital Multimeter</strong><small>Measurement</small></td><td>Sep 18, 2026</td><td>Sep 21, 2026</td><td><span class="pill overdue">Overdue</span></td><td>Rs 10.00</td></tr></tbody></table></div></section>
+      </section>
+
+      <section class="view" id="maintenanceView" aria-labelledby="maintenanceHeading">
+        <div class="section-header"><div><p class="section-kicker">Service log</p><h2 id="maintenanceHeading">Maintenance queue.</h2></div><button class="primary-button" type="button" id="reportButton">Report issue <span>+</span></button></div>
+        <section class="panel maintenance-list"><div class="maintenance-row"><div class="equipment-icon workshop">S</div><div class="maintenance-info"><strong>Soldering Station</strong><span>Heating element requires replacement</span></div><span class="pill progress">In progress</span><small>Reported Sep 20</small></div><div class="maintenance-row"><div class="equipment-icon measurement">O</div><div class="maintenance-info"><strong>Oscilloscope</strong><span>Calibration scheduled for next month</span></div><span class="pill success">Scheduled</span><small>Reported Sep 12</small></div></section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="requestDialog" class="request-dialog">
+    <form method="dialog" id="requestForm">
+      <button class="close-button" type="submit" aria-label="Close request dialog">x</button>
+      <p class="section-kicker">Borrow request</p><h2>Reserve equipment</h2><p class="muted" id="dialogEquipmentName">Choose your due date and send the request to the lab team.</p>
+      <label>Equipment<input id="dialogEquipmentInput" type="text" readonly></label>
+      <label>Return date<input id="dueDateInput" type="date" required></label>
+      <p class="form-error" id="formError" role="alert"></p>
+      <button class="primary-button full-width" type="submit">Submit request <span>-></span></button>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="script.js"></script>
+</body>
+</html>
