@@ -6,6 +6,8 @@ import java.sql.SQLException;
 
 public final class DatabaseConnection {
     private static final String DEFAULT_URL = "jdbc:mysql://localhost:3306/clms?serverTimezone=UTC";
+    private static final String DEFAULT_USER = "clms_app";
+    private static final String DEFAULT_PASSWORD = "your_password";
 
     private DatabaseConnection() {
     }
@@ -17,8 +19,8 @@ public final class DatabaseConnection {
             throw new SQLException("MySQL Connector/J is missing from the runtime classpath.", exception);
         }
         String url = environmentOrDefault("CLMS_DB_URL", DEFAULT_URL);
-        String user = environmentOrDefault("CLMS_DB_USER", "clms_app");
-        String password = System.getenv().getOrDefault("CLMS_DB_PASSWORD", "");
+        String user = environmentOrDefault("CLMS_DB_USER", DEFAULT_USER);
+        String password = environmentOrDefault("CLMS_DB_PASSWORD", DEFAULT_PASSWORD);
         return DriverManager.getConnection(url, user, password);
     }
 

@@ -1,102 +1,74 @@
 # College Laboratory Equipment Management System
 
-CLMS is a Java FSD project for managing college laboratory equipment, borrowing requests, returns, and maintenance records.
+CLMS is a Java FSD project for managing college laboratory equipment, student borrowing requests, returns, overdue fines, and maintenance records.
 
-## Phase 1 status
+## Project Status
 
-Phase 1 delivers the frontend/UI prototype and relational database design required for Formative Assessment 1:
+### Phase 1: UI and database design
 
-- Responsive HTML5 dashboard screens
-- CSS3 visual system
-- JavaScript interactions and form validation
-- Role switcher for student and lab staff views
-- Equipment catalog and borrow request flow
-- SQL schema and sample data
-- ER documentation in `docs/TASK_GUIDE.md`
+- Responsive HTML5/CSS3 dashboard
+- JavaScript navigation, search, filtering, role switching, and validation
+- Equipment catalog and borrowing request interface
+- MySQL schema and sample data
+- ER model, business rules, and task allocation
 
-## Run the prototype
+### Phase 2: Java backend and integration
 
-Open `frontend/index.html` in a browser, or serve the project directory with any static web server. No build tool or dependency installation is required for Phase 1.
+- Java 17 domain models
+- JDBC connection using MySQL Connector/J
+- DAO layer with prepared statements
+- Service layer for equipment and borrowing workflows
+- Authentication user lookup
+- HTTP API for live equipment and borrow requests
+- Transaction-safe inventory updates and overdue fine calculation
 
-## Project layout
+The frontend currently uses the API for equipment and request operations. It falls back to demo catalog data when the API is offline.
+
+## Features
+
+- **Equipment inventory:** View equipment, categories, locations, quantities, conditions, and availability.
+- **Borrow requests:** Students request available equipment with a return date.
+- **Approvals and returns:** Staff can approve requests, issue equipment, process returns, and update inventory quantities.
+- **Overdue fines:** Returns are charged at `10.00` per overdue day.
+- **Maintenance tracking:** Equipment can be marked for maintenance and associated with service records.
+- **Role support:** The design supports `ADMIN`, `LAB_ASSISTANT`, and `STUDENT` roles.
+
+## Requirements
+
+- Ubuntu/Linux or another Java-compatible operating system
+- Java 17 or newer
+- MySQL Server
+- Python 3 for the static frontend server
+- MySQL Connector/J 8.4.0
+
+## Project Structure
 
 ```text
 CLMS/
-  database/
-    schema.sql
-    sample-data.sql
-  docs/
-    TASK_GUIDE.md
-  frontend/
-    index.html
-    script.js
-    styles.css
-  src/
-    Main.java
+├── database/
+│   ├── schema.sql              # Database, tables, keys, checks, and indexes
+│   └── sample-data.sql         # Demo users, equipment, transactions, and maintenance
+├── docs/
+│   ├── TASK_GUIDE.md           # Project plan, ER model, user stories, and assessment checklist
+│   └── PHASE2_GUIDE.md         # Backend architecture and verification checklist
+├── frontend/
+│   ├── index.html              # Dashboard markup and views
+│   ├── script.js               # UI behavior and API calls
+│   ├── styles.css               # Responsive visual design
+│   └── favicon.svg              # Local browser icon
+├── src/
+│   ├── api/                    # Built-in Java HTTP API
+│   ├── config/                 # JDBC connection configuration
+│   ├── dao/                    # Prepared SQL and result mapping
+│   ├── exception/              # Domain-specific exceptions
+│   ├── model/                  # Java records for domain entities
+│   ├── service/                # Business rules and transactions
+│   └── Main.java               # JDBC equipment-listing smoke test
+├── lib/                        # Local Connector/J jar, ignored by Git
+└── out/                        # Generated class files, ignored by Git
 ```
 
-## Phase 2 backend setup
-
-The Java backend now includes model classes, JDBC DAOs, authentication lookup, equipment listing, borrow requests, approvals, returns, and overdue fine calculation. Java 17 is required.
-
-MySQL Connector/J 8.4.0 is installed locally as `lib/mysql-connector-j-8.4.0.jar`. Keep this jar local because it is ignored by Git. Then compile and run from the project root:
-
-```bash
-mkdir -p lib out
-javac -cp 'lib/mysql-connector-j-8.4.0.jar' -d out $(find src -name '*.java')
-export CLMS_DB_URL='jdbc:mysql://localhost:3306/clms?serverTimezone=UTC'
-export CLMS_DB_USER='clms_app'
-export CLMS_DB_PASSWORD='your_password'
-java -cp 'out:lib/mysql-connector-j-8.4.0.jar' Main
-```
-
-The backend defaults to `clms_app` and an empty password if environment variables are not provided. Do not commit database passwords or connector jars to Git. The current `Main` command lists available equipment and serves as the first JDBC smoke test.
-
-### Run the API
-
-Compile as above, then start the HTTP API in one terminal:
-
-```bash
-java -cp 'out:lib/mysql-connector-j-8.4.0.jar' api.ApiServer
-```
-
-Keep that process running. In a second terminal, serve the frontend:
-
-```bash
-python3 -m http.server 8000 --directory frontend
-```
-
-Open `http://localhost:8000`. The catalog calls `GET http://localhost:8080/api/equipment`, and borrow requests call `POST http://localhost:8080/api/requests`. If the API is stopped, the catalog displays its built-in Phase 1 demo data and requests show an offline message.
-
-
-
-## Run And Setup
-
-## Run the Frontend
-
-From the project root:
-
-```bash
-cd /home/shreyash/Project/Ip/miniproject/CLMS
-python3 -m http.server 8000 --directory frontend
-```
-
-Open:
-
-```text
-http://localhost:8000
-```
-
-Stop the server with `Ctrl+C`.
-
-## Setup MySQL Database
-
-Install MySQL if required:
-
-```bash
-sudo apt update
-sudo apt install mysql-server
-```
+## Database Setup
 
 Start MySQL:
 
@@ -104,154 +76,226 @@ Start MySQL:
 sudo systemctl start mysql
 ```
 
-On Ubuntu, MySQL often configures the `root` account to use Linux socket authentication. Use `sudo mysql` instead of `mysql -u root -p`:
+Ubuntu commonly configures MySQL `root` to use socket authentication. Run the schema with `sudo mysql`, not `mysql -u root -p`:
 
 ```bash
 sudo mysql < database/schema.sql
-```
-
-Insert sample users and equipment:
-
-```bash
 sudo mysql clms < database/sample-data.sql
 ```
 
-Verify the setup:
+Create the application user from the MySQL prompt:
 
 ```bash
 sudo mysql
 ```
 
-Then run:
-
 ```sql
-USE clms;
-SHOW TABLES;
-SELECT * FROM equipment;
-SELECT * FROM users;
-```
-
-If `sudo mysql` reports that the MySQL service is unavailable, start it first:
-
-```bash
-sudo systemctl start mysql
-```
-
-If you specifically need password-based access later, create a separate application user from the `sudo mysql` prompt rather than changing the local `root` authentication:
-
-```sql
-CREATE USER 'clms_app'@'localhost' IDENTIFIED BY 'choose-a-password';
+CREATE USER 'clms_app'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON clms.* TO 'clms_app'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-The database scripts are `schema.sql` and `sample-data.sql`.
-
-The current frontend still uses demo data from `script.js`. The Phase 2 Java layer now provides the first JDBC integration point; replacing frontend demo calls with a web/API layer is the next backend step.
-
-I can install the JDBC driver and compile the backend for you. I cannot enter or discover your database password, so I’ll handle the non-secret setup, verify that Java sees the driver, and then tell you the one command where you must provide your local `clms_app` password.
-
-Ran terminal command:  mkdir -p lib out && curl -fL -o lib/mysql-connector-j-8.4.0.jar https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar && find lib -maxdepth 1 -type f -name '*.jar' -printf '%f\n'
-
-The connector is now installed at `mysql-connector-j-8.4.0.jar`. I’m compiling with that exact jar and running the smoke test once; this will distinguish a fixed driver issue from the remaining database-user/password setup.
-
-Ran terminal command:  rm -rf out && mkdir -p out && javac -cp 'lib/mysql-connector-j-*.jar' -d out $(find src -name '*.java' -print) && java -cp 'out:lib/mysql-connector-j-*.jar' Main
-
-The jar is present and compilation succeeds, but the runtime error now reveals a second issue: the JDBC URL is being split after `localhost:`. That means an existing `CLMS_DB_URL` environment variable is malformed and is overriding the correct default. I’ll inspect only its safe shape, then run with a clean URL explicitly.
-
-Ran terminal command:  printf 'CLMS_DB_URL bytes: '; printf '%s' "${CLMS_DB_URL:-<not set>}" | od -An -t x1c; printf '\nCLMS_DB_USER: %s\n' "${CLMS_DB_USER:-<not set>}"; if [[ -n "${CLMS_DB_PASSWORD:-}" ]]; then printf 'CLMS_DB_PASSWORD: set\n'; else printf 'CLMS_DB_PASSWORD: not set\n'; fi
-
-Ran terminal command:  jar tf lib/mysql-connector-j-8.4.0.jar | grep -m 1 'com/mysql/cj/jdbc/Driver.class'
-
-The environment is clean and the jar contains `com.mysql.cj.jdbc.Driver`, so the wildcard is the remaining suspect. I’m rerunning with the exact jar filename and also forcing the driver class to load in code, which makes the backend reliable across Java launchers and IDE configurations.
-
-Generating patch (11 lines) in 
-
-
-```
-
-```
-
-
-Ran terminal command:  rm -rf out && mkdir -p out && javac -cp lib/mysql-connector-j-8.4.0.jar -d out $(find src -name '*.java' -print) && java -cp out:lib/mysql-connector-j-8.4.0.jar Main
-
-The JDBC driver problem is fixed: Java now loads Connector/J successfully and reaches MySQL. The remaining error is only authentication, and it confirms no password was supplied (`using password: NO`). I’m recording the exact jar path in the setup docs and running a final validation check.
-
-Generating patch (12 lines) in 
-
-
-```
-
-```
-
-
-Ran terminal command:  git diff --check && git status --short
-
-Checked , no problems found
-
-I installed the JDBC driver and fixed the driver-loading issue.
-
-Installed:
-
-```text
-lib/mysql-connector-j-8.4.0.jar
-```
-
-The backend now reaches MySQL successfully. The only remaining issue is:
-
-```text
-Access denied for user 'clms_app'@'localhost'
-```
-
-Set the correct password in the same terminal:
+Verify the database:
 
 ```bash
-export CLMS_DB_USER='clms_app'
-export CLMS_DB_PASSWORD='the_password_for_clms_app'
+sudo mysql -e "USE clms; SHOW TABLES; SELECT * FROM equipment;"
+```
 
+The main tables are:
+
+| Table | Purpose |
+|---|---|
+| `users` | Student, lab assistant, and administrator accounts |
+| `equipment` | Inventory, quantity, location, condition, and status |
+| `borrow_transactions` | Requests, issues, returns, and fines |
+| `maintenance_logs` | Breakdowns, repairs, service cost, and status |
+
+## Install the JDBC Driver
+
+Create the local library directory and download MySQL Connector/J:
+
+```bash
+mkdir -p lib
+curl -fL -o lib/mysql-connector-j-8.4.0.jar \
+  https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+```
+
+The jar is ignored by Git because it is a local dependency.
+
+## Compile the Backend
+
+From the project root:
+
+```bash
 rm -rf out
 mkdir -p out
-
 javac -cp lib/mysql-connector-j-8.4.0.jar \
   -d out $(find src -name '*.java')
+```
 
+The connection uses these defaults in `src/config/DatabaseConnection.java`:
+
+```text
+Database URL: jdbc:mysql://localhost:3306/clms?serverTimezone=UTC
+Username:     clms_app
+Password:     your_password
+```
+
+Environment variables can override the defaults when required:
+
+```bash
+export CLMS_DB_URL='jdbc:mysql://localhost:3306/clms?serverTimezone=UTC'
+export CLMS_DB_USER='clms_app'
+export CLMS_DB_PASSWORD='your_password'
+```
+
+## Run the JDBC Smoke Test
+
+This command connects to MySQL and lists available equipment:
+
+```bash
 java -cp out:lib/mysql-connector-j-8.4.0.jar Main
 ```
 
-If you have not created `clms_app` yet, run:
+Expected output includes equipment such as:
+
+```text
+Available equipment:
+- Arduino Uno Kit (3/12 available)
+- Digital Multimeter (14/18 available)
+```
+
+## Run the Full Application
+
+Use two terminals from the project root.
+
+### Terminal 1: Start the Java API
 
 ```bash
-sudo mysql
-```
-
-Then inside MySQL:
-
-```sql
-CREATE USER 'clms_app'@'localhost' IDENTIFIED BY 'choose-a-password';
-GRANT ALL PRIVILEGES ON clms.* TO 'clms_app'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-Use that same password in `CLMS_DB_PASSWORD`.
-
-Made changes.
-
-
-
-
-
-
-
-
-Run it with two terminals.
-
-Terminal 1:
 java -cp out:lib/mysql-connector-j-8.4.0.jar api.ApiServer
+```
 
-Terminal 2:
+The API runs at `http://localhost:8080`.
+
+### Terminal 2: Start the frontend
+
+```bash
 python3 -m http.server 8000 --directory frontend
+```
 
-Open:
+Open `http://localhost:8000` in a browser.
 
+Stop either server with `Ctrl+C`.
 
-The API server was stopped after testing, so start it again before opening the frontend.
+## API Endpoints
+
+### Get available equipment
+
+```http
+GET http://localhost:8080/api/equipment
+```
+
+### Create a borrow request
+
+```http
+POST http://localhost:8080/api/requests
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "userId": 1,
+  "equipmentId": 2,
+  "dueDate": "2026-09-28"
+}
+```
+
+The API creates a `PENDING` record in `borrow_transactions`. The due date must be after the current date, and the equipment must be available.
+
+## Backend Architecture
+
+```text
+Frontend
+   |
+   | HTTP JSON
+   v
+ApiServer
+   |
+   v
+Service layer       Business validation, transactions, fines
+   |
+   v
+DAO layer           Prepared SQL statements and result mapping
+   |
+   v
+DatabaseConnection JDBC configuration and MySQL connection
+   |
+   v
+MySQL database
+```
+
+The service layer keeps database operations atomic. Approving a request decreases available quantity, while returning equipment increases it and calculates any overdue fine.
+
+## Troubleshooting
+
+### `No suitable driver found`
+
+Make sure the connector jar exists and is included in both commands:
+
+```bash
+ls lib/mysql-connector-j-8.4.0.jar
+javac -cp lib/mysql-connector-j-8.4.0.jar -d out $(find src -name '*.java')
+java -cp out:lib/mysql-connector-j-8.4.0.jar Main
+```
+
+### `Access denied for user 'clms_app'`
+
+Check that the MySQL user exists and that the password in `DatabaseConnection.java` matches:
+
+```bash
+sudo mysql -e "SELECT user, host FROM mysql.user WHERE user = 'clms_app';"
+```
+
+### API returns HTTP 500
+
+Start the API from the project root after compiling. If it was already running before a code or credential change, stop it with `Ctrl+C` and restart it.
+
+### Browser reports `ERR_INTERNET_DISCONNECTED`
+
+The application does not require Google Fonts or external assets. Restart the frontend server and reload `http://localhost:8000`.
+
+### Port already in use
+
+Stop the old process or use another frontend port:
+
+```bash
+python3 -m http.server 8001 --directory frontend
+```
+
+The frontend API URL remains `http://localhost:8080`.
+
+## Assessment Mapping
+
+### Formative Assessment 1
+
+- HTML5 structure: `frontend/index.html`
+- CSS3 styling: `frontend/styles.css`
+- JavaScript interactivity: `frontend/script.js`
+- Database design: `database/schema.sql`
+- Sample records: `database/sample-data.sql`
+- ER model and planning: `docs/TASK_GUIDE.md`
+
+### Formative Assessment 2
+
+- OOP model classes: `src/model/`
+- Exception handling: `src/exception/`
+- JDBC integration: `src/config/` and `src/dao/`
+- Business logic: `src/service/`
+- Backend API: `src/api/ApiServer.java`
+- Backend setup guide: `docs/PHASE2_GUIDE.md`
+
+## Security Note
+
+The current hardcoded `your_password` value is intended only for the local academic demo setup requested for this project. Before publishing the repository or deploying the application, move credentials to environment variables or a secrets manager and use hashed passwords instead of the sample database values.
