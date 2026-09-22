@@ -11,6 +11,11 @@ public final class DatabaseConnection {
     }
 
     public static Connection open() throws SQLException {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException exception) {
+            throw new SQLException("MySQL Connector/J is missing from the runtime classpath.", exception);
+        }
         String url = environmentOrDefault("CLMS_DB_URL", DEFAULT_URL);
         String user = environmentOrDefault("CLMS_DB_USER", "clms_app");
         String password = System.getenv().getOrDefault("CLMS_DB_PASSWORD", "");

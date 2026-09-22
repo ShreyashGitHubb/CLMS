@@ -11,6 +11,7 @@ const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 const requestDialog = $('#requestDialog');
 const requestForm = $('#requestForm');
+const API_BASE = 'http://localhost:8080/api';
 let selectedEquipment = null;
 
 function categoryClass(category) { return category.toLowerCase().replace(' ', ''); }
@@ -74,11 +75,42 @@ requestForm.addEventListener('submit', (event) => {
   const dueDate = $('#dueDateInput').value;
   if (!dueDate) { $('#formError').textContent = 'Please choose a return date.'; return; }
   if (new Date(dueDate) <= new Date()) { $('#formError').textContent = 'Return date must be after today.'; return; }
-  requestDialog.close();
-  $('#activeStat').textContent = '2';
-  $('#requestBadge').textContent = '2';
-  showToast(`${selectedEquipment.name} request submitted`);
+  submitRequest(dueDate);
 });
 
-renderRecommended();
-renderCatalog();
+async function submitRequest(dueDate) {
+  try {
+    const response = await fetch(`${API_BASE}/requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 1, equipmentId: selectedEquipment.id, dueDate })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Request could not be submitted.');
+    requestDialog.close();
+    $('#activeStat').textContent = '2';
+    $('#requestBadge').textContent = '2';
+    showToast(`${selectedEquipment.name} request submitted`);
+  } catch (error) {
+    $('#formError').textContent = error.message.includes('Failed to fetch')
+      ? 'API is offline. Start the Java API server and try again.'
+      : error.message;
+  }
+}
+
+async function loadEquipment() {
+  try {
+    const response = await fetch(`${API_BASE}/equipment`);
+    if (!response.ok) throw new Error('Equipment API unavailable');
+    const liveEquipment = await response.json();
+    equipment.splice(0, equipment.length, ...liveEquipment);
+    renderRecommended();
+    renderCatalog();
+    showToast('Live inventory connected');
+  } catch (error) {
+    renderRecommended();
+    renderCatalog();
+  }
+}
+
+loadEquipment();
