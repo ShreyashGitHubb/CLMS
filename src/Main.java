@@ -14,12 +14,7 @@ public class Main {
         } catch (Exception exception) {
             System.err.println("CLMS could not connect to the database: " + exception.getMessage());
             System.err.println("Check the JDBC driver and CLMS_DB_* environment variables.");
-            System.exit(1);9:19 AM
-39s
-•
-GPT-5.6 Luna • 0.9 credits
-Restore Checkpoint
-can you make the reade me perfectly formated and also every this is proper explained about th
+            System.exit(1);
         }
     }
 }

@@ -8,12 +8,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TransactionDao {
     private static final String INSERT_REQUEST = "INSERT INTO borrow_transactions (user_id, equipment_id, due_date, status, fine_amount) VALUES (?, ?, ?, 'PENDING', 0.00)";
     private static final String FIND_BY_ID = "SELECT transaction_id, user_id, equipment_id, issue_date, due_date, return_date, status, fine_amount FROM borrow_transactions WHERE transaction_id = ? FOR UPDATE";
     private static final String APPROVE = "UPDATE borrow_transactions SET issue_date = ?, status = 'APPROVED', approved_by = ? WHERE transaction_id = ? AND status = 'PENDING'";
     private static final String RETURN = "UPDATE borrow_transactions SET return_date = ?, status = 'RETURNED', fine_amount = ? WHERE transaction_id = ? AND status = 'APPROVED'";
+    private static final String FIND_ALL = "SELECT transaction_id, user_id, equipment_id, issue_date, due_date, return_date, status, fine_amount FROM borrow_transactions ORDER BY created_at DESC";
+    private static final String FIND_BY_USER = "SELECT transaction_id, user_id, equipment_id, issue_date, due_date, return_date, status, fine_amount FROM borrow_transactions WHERE user_id = ? ORDER BY created_at DESC";
 
     public int createRequest(Connection connection, int userId, int equipmentId, LocalDate dueDate) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(INSERT_REQUEST, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -69,5 +73,40 @@ public class TransactionDao {
             statement.setInt(3, transactionId);
             return statement.executeUpdate() == 1;
         }
+    }
+
+    public List<BorrowTransaction> findAll(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(FIND_ALL);
+             ResultSet results = statement.executeQuery()) {
+            return mapList(results);
+        }
+    }
+
+    public List<BorrowTransaction> findByUser(Connection connection, int userId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(FIND_BY_USER)) {
+            statement.setInt(1, userId);
+            try (ResultSet results = statement.executeQuery()) {
+                return mapList(results);
+            }
+        }
+    }
+
+    private List<BorrowTransaction> mapList(ResultSet results) throws SQLException {
+        List<BorrowTransaction> transactions = new ArrayList<>();
+        while (results.next()) {
+            Date issueDate = results.getDate("issue_date");
+            Date returnDate = results.getDate("return_date");
+            transactions.add(new BorrowTransaction(
+                    results.getInt("transaction_id"),
+                    results.getInt("user_id"),
+                    results.getInt("equipment_id"),
+                    issueDate == null ? null : issueDate.toLocalDate(),
+                    results.getDate("due_date").toLocalDate(),
+                    returnDate == null ? null : returnDate.toLocalDate(),
+                    results.getString("status"),
+                    results.getBigDecimal("fine_amount")
+            ));
+        }
+        return transactions;
     }
 }

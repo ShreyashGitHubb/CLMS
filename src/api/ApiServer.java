@@ -7,7 +7,10 @@ import dao.TransactionDao;
 import exception.EquipmentNotAvailableException;
 import exception.InvalidTransactionException;
 import model.Equipment;
+import model.BorrowTransaction;
+import model.User;
 import service.BorrowService;
+import service.AuthenticationService;
 import service.EquipmentService;
 
 import java.io.IOException;
@@ -18,13 +21,20 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ApiServer {
     private static final int PORT = 8080;
     private static final Pattern NUMBER_FIELD = Pattern.compile("\\\"(userId|equipmentId)\\\"\\s*:\\s*(\\d+)");
     private static final Pattern DATE_FIELD = Pattern.compile("\\\"dueDate\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
+    private static final Pattern EMAIL_FIELD = Pattern.compile("\\\"email\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
+    private static final Pattern PASSWORD_FIELD = Pattern.compile("\\\"password\\\"\\s*:\\s*\\\"([^\\\"]+)\\\"");
     private final EquipmentService equipmentService = new EquipmentService(new EquipmentDao());
     private final BorrowService borrowService = new BorrowService(new EquipmentDao(), new TransactionDao());
+    private final AuthenticationService authenticationService = new AuthenticationService(new dao.UserDao());
+    private final Map<String, User> sessions = new ConcurrentHashMap<>();
 
     public static void main(String[] args) throws IOException {
         new ApiServer().start();
@@ -33,6 +43,7 @@ public class ApiServer {
     public void start() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
         server.createContext("/api/equipment", this::handleEquipment);
+        server.createContext("/api/auth/login", this::handleLogin);
         server.createContext("/api/requests", this::handleRequest);
         server.setExecutor(null);
         server.start();
@@ -51,23 +62,84 @@ public class ApiServer {
         }
     }
 
-    private void handleRequest(HttpExchange exchange) throws IOException {
+    private void handleLogin(HttpExchange exchange) throws IOException {
         addCorsHeaders(exchange);
         if (handleOptions(exchange) || !"POST".equals(exchange.getRequestMethod())) {
             return;
         }
         try {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            int userId = numberField(body, "userId");
+            User user = authenticationService.authenticate(stringField(body, EMAIL_FIELD, "email"), stringField(body, PASSWORD_FIELD, "password"));
+            String token = UUID.randomUUID().toString();
+            sessions.put(token, user);
+                writeJson(exchange, 200, "{\"token\":\"" + token + "\",\"user\":{"
+                    + "\"id\":" + user.id() + ",\"name\":\"" + escape(user.fullName())
+                    + "\",\"email\":\"" + escape(user.email()) + "\",\"role\":\"" + user.role() + "\"}}");
+        } catch (IllegalArgumentException exception) {
+            writeError(exchange, 401, exception.getMessage());
+        } catch (Exception exception) {
+            writeError(exchange, 500, exception.getMessage());
+        }
+    }
+
+    private void handleRequest(HttpExchange exchange) throws IOException {
+        addCorsHeaders(exchange);
+        if (handleOptions(exchange)) {
+            return;
+        }
+        try {
+            User authenticatedUser = authenticatedUser(exchange);
+            String path = exchange.getRequestURI().getPath();
+            if ("GET".equals(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                int userId = authenticatedUser.role() == User.Role.STUDENT ? authenticatedUser.id()
+                        : query != null && query.startsWith("userId=") ? Integer.parseInt(query.substring("userId=".length())) : 0;
+                writeJson(exchange, 200, transactionsJson(userId));
+                return;
+            }
+            if (path.matches("/api/requests/\\d+/(approve|return)")) {
+                int transactionId = Integer.parseInt(path.split("/")[3]);
+                if (path.endsWith("/approve")) {
+                    if (authenticatedUser.role() == User.Role.STUDENT) {
+                        writeError(exchange, 403, "Only lab staff can approve requests.");
+                        return;
+                    }
+                    borrowService.approveRequest(transactionId, authenticatedUser.id());
+                } else {
+                    borrowService.returnEquipment(transactionId);
+                }
+                writeJson(exchange, 200, "{\"status\":\"updated\"}");
+                return;
+            }
+            if (!"POST".equals(exchange.getRequestMethod())) {
+                writeError(exchange, 405, "Method not allowed");
+                return;
+            }
+            String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            int userId = authenticatedUser.id();
             int equipmentId = numberField(body, "equipmentId");
             LocalDate dueDate = LocalDate.parse(dateField(body));
             int transactionId = borrowService.requestEquipment(userId, equipmentId, dueDate);
             writeJson(exchange, 201, "{\"transactionId\":" + transactionId + ",\"status\":\"PENDING\"}");
         } catch (InvalidTransactionException | EquipmentNotAvailableException exception) {
             writeError(exchange, 400, exception.getMessage());
+        } catch (IllegalArgumentException exception) {
+            writeError(exchange, 401, exception.getMessage());
         } catch (Exception exception) {
             writeError(exchange, 500, exception.getMessage());
         }
+    }
+
+    private User authenticatedUser(HttpExchange exchange) {
+        String header = exchange.getRequestHeaders().getFirst("Authorization");
+        if (header == null || !header.startsWith("Bearer ")) {
+            throw new IllegalArgumentException("Authentication required.");
+        }
+        User user = sessions.get(header.substring("Bearer ".length()));
+        if (user == null) {
+            throw new IllegalArgumentException("Invalid session.");
+        }
+        return user;
     }
 
     private boolean handleOptions(HttpExchange exchange) throws IOException {
@@ -106,6 +178,24 @@ public class ApiServer {
                 + "\"location\":\"" + escape(item.location()) + "\"}").collect(java.util.stream.Collectors.joining(",")) + "]";
     }
 
+    private String transactionsJson(int userId) throws java.sql.SQLException {
+        try (var connection = config.DatabaseConnection.open()) {
+            List<BorrowTransaction> transactions = userId > 0
+                    ? new TransactionDao().findByUser(connection, userId)
+                    : new TransactionDao().findAll(connection);
+            return "[" + transactions.stream().map(transaction -> "{"
+                    + "\"id\":" + transaction.id() + ",\"userId\":" + transaction.userId()
+                    + ",\"equipmentId\":" + transaction.equipmentId() + ",\"issueDate\":" + nullable(transaction.issueDate())
+                    + ",\"dueDate\":\"" + transaction.dueDate() + "\",\"returnDate\":" + nullable(transaction.returnDate())
+                    + ",\"status\":\"" + transaction.status() + "\",\"fine\":" + transaction.fineAmount() + "}")
+                    .collect(java.util.stream.Collectors.joining(",")) + "]";
+        }
+    }
+
+    private String nullable(LocalDate date) {
+        return date == null ? "null" : "\"" + date + "\"";
+    }
+
     private int numberField(String body, String field) {
         Matcher matcher = NUMBER_FIELD.matcher(body);
         while (matcher.find()) {
@@ -120,6 +210,14 @@ public class ApiServer {
         Matcher matcher = DATE_FIELD.matcher(body);
         if (!matcher.find()) {
             throw new IllegalArgumentException("Missing field: dueDate");
+        }
+        return matcher.group(1);
+    }
+
+    private String stringField(String body, Pattern pattern, String field) {
+        Matcher matcher = pattern.matcher(body);
+        if (!matcher.find()) {
+            throw new IllegalArgumentException("Missing field: " + field);
         }
         return matcher.group(1);
     }

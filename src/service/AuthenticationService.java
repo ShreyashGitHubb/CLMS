@@ -13,13 +13,13 @@ public class AuthenticationService {
         this.userDao = userDao;
     }
 
-    public User findUser(String email) throws SQLException {
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("Email is required.");
+    public User authenticate(String email, String password) throws SQLException {
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Email and password are required.");
         }
         try (var connection = DatabaseConnection.open()) {
-            return userDao.findByEmail(connection, email.trim().toLowerCase())
-                    .orElseThrow(() -> new IllegalArgumentException("No user was found for that email."));
+            return userDao.findByCredentials(connection, email.trim().toLowerCase(), password)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
         }
     }
 }

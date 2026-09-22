@@ -9,11 +9,12 @@ import java.sql.SQLException;
 import java.util.Optional;
 
 public class UserDao {
-    private static final String FIND_BY_EMAIL = "SELECT user_id, full_name, email, role FROM users WHERE email = ?";
+    private static final String FIND_BY_CREDENTIALS = "SELECT user_id, full_name, email, role FROM users WHERE email = ? AND password_hash = ?";
 
-    public Optional<User> findByEmail(Connection connection, String email) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(FIND_BY_EMAIL)) {
+    public Optional<User> findByCredentials(Connection connection, String email, String password) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(FIND_BY_CREDENTIALS)) {
             statement.setString(1, email);
+            statement.setString(2, password);
             try (ResultSet results = statement.executeQuery()) {
                 if (!results.next()) {
                     return Optional.empty();

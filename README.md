@@ -50,7 +50,8 @@ CLMS/
 │   └── sample-data.sql         # Demo users, equipment, transactions, and maintenance
 ├── docs/
 │   ├── TASK_GUIDE.md           # Project plan, ER model, user stories, and assessment checklist
-│   └── PHASE2_GUIDE.md         # Backend architecture and verification checklist
+│   ├── PHASE2_GUIDE.md         # Backend architecture and verification checklist
+│   └── SUBMISSION_REPORT.md    # PDF-ready Formative Assessment 1 report
 ├── frontend/
 │   ├── index.html              # Dashboard markup and views
 │   ├── script.js               # UI behavior and API calls
@@ -278,6 +279,8 @@ The frontend API URL remains `http://localhost:8080`.
 
 ## Assessment Mapping
 
+The PDF-ready assessment content and screenshot checklist are in `docs/SUBMISSION_REPORT.md`.
+
 ### Formative Assessment 1
 
 - HTML5 structure: `frontend/index.html`
@@ -299,3 +302,14 @@ The frontend API URL remains `http://localhost:8080`.
 ## Security Note
 
 The current hardcoded `your_password` value is intended only for the local academic demo setup requested for this project. Before publishing the repository or deploying the application, move credentials to environment variables or a secrets manager and use hashed passwords instead of the sample database values.
+Student:
+Email: aarav@clms.edu
+Password: demo-password
+
+Lab assistant:
+Email: meera@clms.edu
+Password: demo-password
+
+Admin:
+Email: admin@clms.edu
+Password: demo-password
